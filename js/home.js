@@ -179,8 +179,9 @@ $(document).ready(function() {
             },
             error: function (xhr, status, error) {
                 $('#loading2').hide()
+                let errorMessage = xhr.responseJSON.error || "An error occurred.";
                 Toastify({
-                    text: error,
+                    text: errorMessage,
                     duration: 3000,
                     newWindow: true,
                     gravity: "top",
