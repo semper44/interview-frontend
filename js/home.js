@@ -123,7 +123,7 @@ $(document).ready(function() {
  
     // fecthing request
     $.ajax({
-        url: 'http://127.0.0.1:8000/tasks/list/',
+        url: 'https://taskmaster-xs75.onrender.com/tasks/list/',
         method: 'GET',
         dataType: 'json',
         success: function(response) {
@@ -153,7 +153,7 @@ $(document).ready(function() {
         
 
         $.ajax({
-            url: 'http://127.0.0.1:8000/tasks/create/',
+            url: 'https://taskmaster-xs75.onrender.com/tasks/create/',
             method: 'POST',
             processData: false, 
             contentType: false, 
@@ -210,7 +210,7 @@ $(document).ready(function() {
         $showOptionsDiv.hide()
         
         $.ajax({
-            url: `http://127.0.0.1:8000/tasks/delete/${name}/`,
+            url: `https://taskmaster-xs75.onrender.com/tasks/delete/${name}/`,
             method: 'DELETE',
             dataType: 'json',
             success: function(response) {
@@ -294,7 +294,7 @@ $(document).ready(function() {
         }
         
         $.ajax({
-            url: `http://127.0.0.1:8000/tasks/update/${globalName}/`,
+            url: `https://taskmaster-xs75.onrender.com/tasks/update/${globalName}/`,
             method: 'PATCH',
             data:formData,
             processData: false, 
@@ -382,7 +382,7 @@ $(document).ready(function() {
     let baseTypingTimer;
     // Function to perform the AJAX request
     function search(query) {
-        const url = 'http://127.0.0.1:8000/tasks/search/?q=' + query;
+        const url = 'https://taskmaster-xs75.onrender.com/tasks/search/?q=' + query;
 
         // Clear previous timeouts
         clearTimeout(baseTypingTimer);
@@ -506,7 +506,7 @@ $(document).ready(function() {
         $showOptionsDiv.hide()
         
         $.ajax({
-            url: `http://127.0.0.1:8000/tasks/finish-tasks/${name}/`,
+            url: `https://taskmaster-xs75.onrender.com/tasks/finish-tasks/${name}/`,
             method: 'PATCH',
             dataType: 'json',
             success: function(response) {
