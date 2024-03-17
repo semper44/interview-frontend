@@ -145,6 +145,7 @@ $(document).ready(function() {
     // submit form
     $('#create-submit').click(function (e) {
         e.preventDefault();
+        $('#loading2').show()
         let formData = new FormData();
         formData.append('name', $('#name').val());
         formData.append('contributors', $('#contributors').val());
@@ -161,6 +162,7 @@ $(document).ready(function() {
             success: function (response) {
                 console.log(response);
                 createModal.hide();
+                $('#loading2').hide()
                 createANewTableRow(response, firstTbody);
                 Toastify({
                     text: "Task created",
@@ -176,7 +178,7 @@ $(document).ready(function() {
 
             },
             error: function (xhr, status, error) {
-                console.log(error);
+                $('#loading2').hide()
                 Toastify({
                     text: error,
                     duration: 3000,
@@ -202,6 +204,7 @@ $(document).ready(function() {
 
     // to delete a task
     $(document).on('click', '.delete-task', function() {
+        $('#loading2').show()
         let clickedTaskOptions = $(this); 
         let name = clickedTaskOptions.closest('tr').find('.table-name').text();
         let tr = clickedTaskOptions.closest('.table-rows')
@@ -214,6 +217,7 @@ $(document).ready(function() {
             method: 'DELETE',
             dataType: 'json',
             success: function(response) {
+                $('#loading2').hide()
                 tr.hide()
                 Toastify({
                     text: "Deleted successfully",
@@ -230,6 +234,7 @@ $(document).ready(function() {
                 
             },
             error: function(xhr, status, error) {
+                $('#loading2').hide()
                 Toastify({
                     text: error,
                     duration: 3000,
@@ -276,6 +281,7 @@ $(document).ready(function() {
     // updating tasks
     $("#update-submit").on('click', function(e) {  
         console.log($('#update-task_id_file')[0].files[0]);
+        $('#loading2').show()
         let name = $('#updatename').val()
         e.preventDefault();  
         let formData = new FormData();
@@ -301,6 +307,7 @@ $(document).ready(function() {
             contentType: false,
             success: function(response) {
                 console.log(response);
+                $('#loading2').hide()
                 globalTr.find('.first-img').attr('src', response.image)
                 let contentTd = globalTr.find('td[content]');     
                 contentTd.attr('content', response.expires);
@@ -322,7 +329,7 @@ $(document).ready(function() {
                     }).showToast();
             },
             error: function(xhr, status, error) {
-                console.log(error);
+                $('#loading2').hide()
                 Toastify({
                     text: error,
                     duration: 3000,
