@@ -45,7 +45,7 @@ $(document).ready(function() {
         // Create and append td for the first column
         let td1 = $('<td>').addClass('px-6 py-4 whitespace-nowrap');
         let div1 = $('<div>').addClass('flex items-center gap-3');
-        div1.append($('<img>').attr('src', item.image).attr('alt', item.name).addClass('first-img fw-[20px] h-[20px] rounded-full'));
+        div1.append($('<img>').attr('src', item.image_url).attr('alt', item.name).addClass('first-img fw-[20px] h-[20px] rounded-full'));
         let leftDiv = $('<div>').addClass('left');
         leftDiv.append($('<p>').addClass('table-name text-base font-bold').text(item.name));
         leftDiv.append($('<div>').addClass('date text-gray-400 text-sm').text('Oct 11, 2021'));
