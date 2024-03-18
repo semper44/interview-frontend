@@ -479,7 +479,6 @@ $(document).ready(function() {
         });
     
         $(modalpreviewCancel).click(function (e) {
-            alert("clicked")
             $(modalpreview).val("");
             $(parentmodalpreview).css('display', 'none');
             $(taskfileinputcontainer).css('display', 'block');
@@ -530,7 +529,7 @@ $(document).ready(function() {
                     },
                     // onClick: function(){} // Callback after click
                 }).showToast();
-                
+                window.location.reload()
             },
             error: function(xhr, status, error) {
                 let errorMessage = xhr.responseJSON.error || "An error occurred.";
