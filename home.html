@@ -295,8 +295,8 @@
             <div class="flex mt-4">
                 <!-- ceenter menu -->
                 <div class="h-full w-[72%] flex-grow mt-4 pr-4 pl-2">
-                    <div class="w-full flex justify-between">
-                        <div class="left-tab flex gap-3 items-center">
+                    <div class="w-full grid sm:gap-0 gap-y-4 sm:flex sm:justify-between justify-center">
+                        <div class="left-tab  flex sm:gap-3 gap-[50%] items-center justify-center">
                             <div class="first-tab">
                                 <div
                                     class="cursor-pointer hover:border-base-darkbg flex gap-2 w-[110px] rounded-lg items-center justify-center border border-gray-300">
@@ -304,6 +304,7 @@
                                     <p>List</p>
                                 </div>
                             </div>
+
                             <div class="second-tab">
                                 <div
                                     class="cursor-pointer hover:border-base-darkbg flex gap-2 items-center w-[110px] rounded-lg justify-center border border-gray-300">
@@ -313,12 +314,12 @@
                             </div>
                         </div>
 
-                        <div class="right-tab flex gap-3 relative items-center">
+                        <div class="right-tab flex sm:gap-3 gap-[50%] relative items-center justify-center">
                             <p>Show</p>
                             <div id="show-filter-options"
-                                class="w-[110px] flex gap-2 cursor-pointer rounded-lg items-center justify-center border border-gray-300">
-                                <p id="filtering">All</p>
-                                <i class="fa fa-angle-down" aria-hidden="true"></i>
+                                class="w-[110px] flex gap-2 cursor-pointer rounded-lg items-center justify-center border border-gray-300" style="margin-left: 2.5rem;">
+                                <p id="filtering" class="px-[10px] py-[2px]">All</p>
+                                <i class="fa fa-angle-down pr-3" aria-hidden="true"></i>
                             </div>
                             <div id="filter-options"
                                 class="w-[120px] hidden bg-white px-4 py-3 right-[55px] rounded-lg absolute top-0">
@@ -327,6 +328,9 @@
                             </div>
                         </div>
                     </div>
+                    
+
+                    <!-- 17 found -->
                     <div class="results flex gap-4 items-center mt-6">
                         <div id="back">
                             <i class="material-icons-outlined cursor-pointer"
@@ -341,19 +345,19 @@
                             <thead>
                                 <tr>
                                     <th scope="col"
-                                        class="px-8 py-3 hidden md:block bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        class="px-8 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Task Name
                                     </th>
                                     <th scope="col"
-                                        class="px-8 py-3 hidden md:block bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        class="px-8 py-3 hidden md:table-cell  bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Due In
                                     </th>
                                     <th scope="col"
-                                        class="px-8 py-3 hidden md:block bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        class="px-8 py-3 hidden md:table-cell  bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Tasks
                                     </th>
                                     <th scope="col"
-                                        class="px-8 py-3 bg-gray-50 hidden md:block  text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        class="px-8 py-3 bg-gray-50 hidden md:table-cell  text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Status
                                     </th>
                                     <th scope="col"
