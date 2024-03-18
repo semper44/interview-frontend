@@ -55,12 +55,12 @@ $(document).ready(function() {
 
         // Creating and append td for the second column
         console.log(dateDue);
-        let td2 = $('<td>').addClass('px-6 py-4 md:table-cell whitespace-nowrap');
+        let td2 = $('<td>').addClass('px-6 py-4 hidden md:table-cell whitespace-nowrap');
         td2.append($('<p>').addClass('text-center bg-blue-50 rounded p-2').text(dateDue)).attr('content', item.expires);
         tr.append(td2);
 
         // Create and append td for the third column
-        let td3 = $('<td>').addClass('px-6 py-4  md:table-cell whitespace-nowrap ');
+        let td3 = $('<td>').addClass('px-6 py-4 hidden md:table-cell whitespace-nowrap ');
         td3.append($('<p>').addClass('font-bold').text(item.tasks_number +"/"+item.total_tasks));
         td3.append($('<p>').addClass('text-sm text-gray-400').text('Tasks'));
         tr.append(td3);
@@ -72,7 +72,7 @@ $(document).ready(function() {
         }else{
             progress = days
         }
-        let td4 = $('<td>').addClass('px-6  md:table-cell whitespace-nowrap');
+        let td4 = $('<td>').addClass('px-6 hidden md:table-cell whitespace-nowrap');
         td4.append($('<p>').addClass('text-blue-300').text('In Progress'));
         let progressBarDiv = $('<div>').addClass('w-[80%] bg-gray-200 rounded-lg overflow-hidden');
         let progressBarDivSubDiv = $('<div>').attr('id', 'progress-bar').addClass('bg-blue-300 h-2').css("width", `${progress}%`);
