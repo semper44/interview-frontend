@@ -132,6 +132,7 @@ $(document).ready(function() {
             // Iterate over each item in the response
             $.each(response, function(index, item) {
                 createANewTableRow(item, firstTbody)
+                $("#loading").hide()
             
             });
         },
@@ -162,8 +163,8 @@ $(document).ready(function() {
             success: function (response) {
                 console.log(response);
                 createModal.hide();
-                $('#loading2').hide()
                 createANewTableRow(response, firstTbody);
+                $('#loading2').hide()
                 Toastify({
                     text: "Task created",
                     duration: 3000,
@@ -308,7 +309,6 @@ $(document).ready(function() {
             contentType: false,
             success: function(response) {
                 console.log(response);
-                $('#loading2').hide()
                 globalTr.find('.first-img').attr('src', response.image)
                 let contentTd = globalTr.find('td[content]');     
                 contentTd.attr('content', response.expires);
@@ -317,6 +317,7 @@ $(document).ready(function() {
                 globalClickedTaskOptions.closest('td').find('.first-string').attr('alt', strings[0]);
                 globalClickedTaskOptions.closest('td').find('.second-string').attr('alt', strings[1]);
                 updateModal.hide()
+                $('#loading2').hide()
                 Toastify({
                     text: "Update successfull",
                     duration: 3000,
@@ -548,7 +549,6 @@ $(document).ready(function() {
             });
     })
 
-    $("#loading").hide()
 });
 
 
