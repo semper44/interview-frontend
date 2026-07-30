@@ -1,0 +1,379 @@
+name: Agentic Mixed Orchestration Suite
+
+on:
+  workflow_dispatch:
+    inputs:
+      tools_list:
+        description: 'JSON matrix array'
+        required: true
+        type: string # Example: '["pytest", "ruff", "bandit", "odozi_visitors"]'
+      backend_url:
+        description: 'The API target endpoint (Use Ngrok/LocalTunnel for local testing)'
+        required: true
+        type: string
+        default: 'https://fast-results-behave.loca.lt'
+      custom_script_payload:
+        description: 'Compiled OdoziVisitor class code and file walker'
+        required: false
+        type: string
+        default: ''
+      env_keys_list:
+        description: 'JSON array of environment variable names required by this repository'
+        required: false
+        type: string
+        default: '[]'
+
+permissions:
+  contents: read
+
+jobs:
+  # =========================================================================
+  # JOB 1: PYTEST RUNNER (With Smart Universal Test File Overrides)
+  # =========================================================================
+  run-pytest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: contains(fromJson(inputs.tools_list), 'pytest')
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          REQ_FILE=$(find . -name "requirements.txt" | head -n 1)
+          if [ -n "$REQ_FILE" ]; then
+              pip install -r "$REQ_FILE"
+          fi
+          pip install --upgrade pytest pytest-django pytest-json-report pytest-cov
+
+      - name: Auto-Discover, Run & Stream Pytest in Chunks
+        shell: bash
+        env:
+          RUNNER_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SECRETS_CONTEXT: ${{ toJson(secrets) }}
+          ENV_KEYS_INPUT: ${{ inputs.env_keys_list }}
+        run: |
+          echo "=== OUTPUT_START ==="
+          # =========================================================================
+          # 🎯 AUTOMATED DYNAMIC VARIABLE INJECTOR (Fixed Main Process Scope)
+          # =========================================================================
+          echo "🔍 VERIFICATION: Checking variable payload request..."
+          echo "Requested from Django DB: $ENV_KEYS_INPUT"
+          
+
+          while read -r KEY_NAME; do
+            if [ -n "$KEY_NAME" ] && [ "$KEY_NAME" != "null" ]; then
+              SECRET_VALUE=$(echo "$SECRETS_CONTEXT" | jq -r --arg key "$KEY_NAME" '.[$key]')
+              if [ "$SECRET_VALUE" != "null" ] && [ -n "$SECRET_VALUE" ]; then
+                
+                # THE SECURITY HOOK: Tells GitHub to mask this value instantly across all terminal outputs!
+                echo "::add-mask::$SECRET_VALUE"
+                
+                echo "$KEY_NAME=$SECRET_VALUE" >> $GITHUB_ENV
+                export "$KEY_NAME=$SECRET_VALUE"
+              fi
+            fi
+          done <<< "$(echo "$ENV_KEYS_INPUT" | jq -r '.[]')"
+
+
+          # =========================================================================
+          # 🐍 RUN DYNAMIC PROJECT DISCOVERY & TEST COMMAND
+          # =========================================================================
+          MANAGE_PY_PATH=$(find . -name "manage.py" | head -n 1)
+          if [ -z "$MANAGE_PY_PATH" ]; then
+            RUN_CMD="pytest --json-report --json-report-file=report.json --cov=. --cov-report=json"
+          else
+            PROJECT_DIR=$(dirname "$MANAGE_PY_PATH")
+            SETTINGS_MOD=$(grep -oE "['\"][a-zA-Z0-9_\.]+\.settings['\"]" "$MANAGE_PY_PATH" | tr -d "'\"" | head -n 1)
+            if [ -z "$SETTINGS_MOD" ]; then
+               SETTINGS_DIR=$(find "$PROJECT_DIR" -name "settings.py" | head -n 1)
+               SETTINGS_MOD=$(echo "$SETTINGS_DIR" | sed "s|^$PROJECT_DIR/||" | sed 's|/|.|g' | sed 's|\.py$||')
+            fi
+            
+            # Move the active shell process into the Django directory first for path safety
+            cd "$PROJECT_DIR"
+            
+            # 🎯 ✅ THE HOOK FIX: Added -name "test.py" to catch your singular file natively!
+            TEST_FILES=$(find . \
+              \( -name "test.py" \
+              -o -name "tests.py" \
+              -o -name "test_*.py" \
+              -o -name "*_test.py" \))
+
+            echo "Moved execution root to Django project root: $(pwd)"
+            echo "Detected settings module: $SETTINGS_MOD"
+            echo "Discovered tests relative to root:"
+            echo "$TEST_FILES"
+
+            export PYTHONPATH=".:$PYTHONPATH"
+            export DJANGO_SETTINGS_MODULE="$SETTINGS_MOD"
+
+            # Run pytest directly inside the project root directory
+            RUN_CMD="pytest $TEST_FILES --json-report --json-report-file=report.json --cov=. --cov-report=json"
+          fi
+
+          
+          echo "================================================"
+          echo "STARTING PYTEST"
+          echo "RUN_ID=${{ github.run_id }}"
+          echo "TIME=$(date)"
+          echo "================================================"
+          # Inline streaming chunk framework
+          python -c "
+          import sys, urllib.request, json, time, os
+          buffer = []
+          last_flush = time.time()
+          flush_count = 0
+          url = '${{ inputs.backend_url }}/general/results/'
+          token = os.environ.get('RUNNER_AUTH_TOKEN', '')
+          
+          headers = {
+              'Content-Type': 'application/json', 
+              'bypass-tunnel-reminder': 'true',
+              'Authorization': f'Bearer {token}'
+          }
+          
+          def flush():
+              global buffer, last_flush, flush_count
+              flush_count += 1
+              print(
+                  f'FLUSH #{flush_count} '
+                  f'LINES={len(buffer)} '
+                  f'RUN=${{ github.run_id }}'
+              )
+              if not buffer: return
+              payload = {
+                  'run_id': '${{ github.run_id }}', 
+                  'repo_owner': '${{ github.repository_owner }}',
+                  'repo': '${{ github.repository }}',
+                  'tool': 'pytest', 
+                  'logs': buffer
+              }
+              try:
+                  req = urllib.request.Request(url, data=json.dumps(payload).encode(), headers=headers, method='POST')
+                  with urllib.request.urlopen(req, timeout=30) as response: print(f'FLUSH SUCCESS #{flush_count} - STATUS={response.status}')
+              except Exception as e: sys.stderr.write(f'FLUSH FAILED #{flush_count}: {e}\n')
+              buffer, last_flush = [], time.time()
+          
+
+          for line in sys.stdin:
+              sys.stdout.write(line)
+              buffer.append(line.strip())
+              if len(buffer) >= 5 or (time.time() - last_flush) > 2.0: flush()
+          
+          if len(buffer) > 0:
+              flush()
+          " < <($RUN_CMD 2>&1)
+          
+          # 🌟 THE HOOK FIX: Force pytest to write the physical report.json file to the disk right now!
+          $RUN_CMD > /dev/null 2>&1 || true
+
+          echo "TEST_EXIT_CODE=${PIPESTATUS}" >> $GITHUB_ENV
+          PYTEST_EXIT=${PIPESTATUS[0]}
+
+
+          echo "================================================"
+          echo "PYTEST FINISHED"
+          echo "EXIT=$PYTEST_EXIT"
+          echo "TIME=$(date)"
+          echo "================================================"
+
+          echo "TEST_EXIT_CODE=$PYTEST_EXIT" >> $GITHUB_ENV
+
+      - name: Send Final Pytest Structured Report
+        if: always()
+        run: |
+          if [ -f "report.json" ]; then
+            curl -X POST "${{ inputs.backend_url }}/general/results/" \
+              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              -H "bypass-tunnel-reminder: true" \
+              -F "repo_owner=${{ github.repository_owner }}" \
+              -F "run_id=${{ github.run_id }}" \
+              -F "repo=${{ github.repository }}" \
+              -F "tool=pytest" \
+              -F "file=@report.json"
+          fi
+          exit ${{ env.TEST_EXIT_CODE }}
+
+
+  # =========================================================================
+  # JOB 2: RUFF RUNNER
+  # =========================================================================
+  run-ruff:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: contains(fromJson(inputs.tools_list), 'ruff')
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Ruff
+        run: pip install ruff
+      - name: Run Ruff Linter
+        run: |
+          ruff check --output-format json . > ruff_report.json || true
+          curl -X POST "${{ inputs.backend_url }}/general/results/" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "bypass-tunnel-reminder: true" \
+            -F "repo=${{ github.repository }}" \
+            -F "repo_owner=${{ github.repository_owner }}" \
+            -F "run_id=${{ github.run_id }}" \
+            -F "tool=ruff" \
+            -F "file=@ruff_report.json"
+
+  # =========================================================================
+  # JOB 3: BANDIT RUNNER
+  # =========================================================================
+  run-bandit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: contains(fromJson(inputs.tools_list), 'bandit')
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Bandit
+        run: pip install bandit
+      - name: Run Bandit Security
+        run: |
+          bandit -r . -lll -f json > bandit_report.json || true
+          curl -X POST "${{ inputs.backend_url }}/general/results/" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "bypass-tunnel-reminder: true" \
+            -F "repo=${{ github.repository }}" \
+            -F "repo_owner=${{ github.repository_owner }}" \
+            -F "run_id=${{ github.run_id }}" \
+            -F "tool=bandit" \
+            -F "file=@bandit_report.json"
+
+  # =========================================================================
+  # JOB 4: ODOZI RUNNER
+  # =========================================================================
+  run-odozi:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: contains(fromJson(inputs.tools_list), 'odozi_visitors')
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run Custom Odozi Code Engine
+        run: |
+          echo '${{ inputs.custom_script_payload }}' | base64 -d > odozi_runner.py
+          python odozi_runner.py > odozi_report.json || true
+          curl -X POST "${{ inputs.backend_url }}/general/results/" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "bypass-tunnel-reminder: true" \
+            -F "repo=${{ github.repository }}" \
+            -F "repo_owner=${{ github.repository_owner }}" \
+            -F "run_id=${{ github.run_id }}" \
+            -F "tool=odozi_visitors" \
+            -F "file=@odozi_report.json"
+
+
+    # =========================================================================
+ 
+  # JOB 5: PIP-AUDIT RUNNER (Dependency Vulnerability Scanner)
+  # =========================================================================
+  run-pip-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: contains(fromJson(inputs.tools_list), 'pip_audit')
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Pip-Audit & Check Chunks
+        shell: bash
+        run: |
+          echo "================================================"
+          echo "STARTING DEPENDENCY AUDIT SECURITY CHECK"
+          echo "================================================"
+          pip install --upgrade pip pip-audit
+          
+          REQ_FILE=$(find . -name "requirements.txt" | head -n 1)
+          
+          # 1. Output the tool checks directly into a local JSON report file
+          if [ -n "$REQ_FILE" ]; then
+              echo "Found dependency file: $REQ_FILE"
+              pip-audit -f json -r "$REQ_FILE" > pip_audit_report.json || true
+          else
+              echo "⚠️ Warning: No requirements.txt found. Auditing active environment."
+              pip-audit -f json > pip_audit_report.json || true
+          fi
+
+          # 2. Curl that final report file back to your Django server views
+          curl -X POST "${{ inputs.backend_url }}/general/results/" \
+            -H "bypass-tunnel-reminder: true" \
+            -F "repo=${{ github.repository }}" \
+            -F "repo_owner=${{ github.repository_owner }}" \
+            -F "run_id=${{ github.run_id }}" \
+            -F "tool=pip_audit" \
+            -F "file=@pip_audit_report.json"
+
+
+  cleanup:
+    needs:
+      - run-pytest
+      - run-ruff
+      - run-bandit
+      - run-odozi
+
+    if: always()
+
+    permissions:
+      contents: write
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - run: |
+          rm .github/workflows/orchestrator.yml
+
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+
+          git add .
+          git commit -m "Remove temporary workflow" || true
+          git push
+    
+  
