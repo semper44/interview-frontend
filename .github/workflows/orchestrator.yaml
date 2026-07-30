@@ -366,8 +366,10 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - run: |
-          rm .github/workflows/orchestrator.yml
+      - name: Clean up temporary pipelines
+        run: |
+          # 🔴 FIXED HERE: Changed extension to .yaml and added the -f safety flag
+          rm -f .github/workflows/orchestrator.yaml
 
           git config user.name "github-actions"
           git config user.email "actions@github.com"
@@ -375,5 +377,3 @@ jobs:
           git add .
           git commit -m "Remove temporary workflow" || true
           git push
-    
-  
